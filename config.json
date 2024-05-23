@@ -1,0 +1,20 @@
+{
+    "ServerHost": "addr.duckdns.org",
+    "ServerPort": 51820,
+    "Network": "10.0.0.0/28",
+    "Subnets": [
+        {
+            "Name": "stream",
+            "CIDR": "10.0.0.8/29",
+            "Drop": "192.168.0.0/24"
+        }
+    ],
+    "Devices": [
+        "bedroom",
+        "living",
+        {
+            "Name": "nf1",
+            "Subnet": "stream"
+        }
+    ]
+}

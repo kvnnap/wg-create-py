@@ -1,0 +1,15 @@
+{
+    "name": "wg-create-py Dev",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "mounts": [
+		"type=bind,source=${localEnv:HOME}/.ssh,target=/home/ubuntu/.ssh,readonly",
+		"type=bind,source=/etc/localtime,target=/etc/localtime,readonly"
+	],
+    "customizations": {
+        "vscode": {
+            "extensions": ["ms-python.python"]
+        }
+    }
+}

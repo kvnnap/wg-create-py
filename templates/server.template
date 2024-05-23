@@ -1,0 +1,9 @@
+# server
+
+[Interface]
+Address = SERVER_IP/PREFIX_LENGTH
+ListenPort = SERVER_PORT
+PrivateKey = SERVER_PRIVATE_KEY
+PostUp = iptables -t nat -A POSTROUTING -o eth+ -j MASQUERADE
+PostDown = iptables -t nat -D POSTROUTING -o eth+ -j MASQUERADE
+
