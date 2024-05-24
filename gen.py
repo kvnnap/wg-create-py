@@ -1,105 +1,19 @@
 import sys
 import os
-import subprocess
-import ipaddress
 import qrcode
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from utils.factory import unpack_config
-from utils.serialisation import load
+from utils.file import *
 from utils.ip import *
-
-class NetGroup:
-    def __init__(self, name, subnetConf, mainCidr, ips = None):
-        self.name = name
-        self.cidr = subnetConf['CIDR']
-        self.drop =  subnetConf['Drop'] if 'Drop' in subnetConf else None
-        self.mainCidr = mainCidr
-        self.ips = ips
-
-        if not is_subnet_in_network(self.cidr, mainCidr):
-            raise ValueError(f'cidr error: {self.name} not in main')
-        
-    def get_ips(self):
-        if self.ips:
-            return (ip for ip in self.ips)
-        mainNet = ipaddress.ip_network(self.mainCidr)
-        dIps = {int(mainNet.network_address), int(mainNet.broadcast_address)}
-        return (int(ip) for ip in get_ips(self.cidr) if ip not in dIps)
-
-KEYS_DIR = "keys"
-
-def create_pair(name, gen_pre):
-    force_prv = False
-    preshared = ""
-
-    path = os.path.join(KEYS_DIR, name, name)
-    orig_umask = os.umask(0o077)
-
-    # Create directory
-    os.umask(orig_umask)
-    os.makedirs(os.path.join(KEYS_DIR, name), exist_ok=True)
-    os.umask(0o077)
-
-    # Generate private key if not exists
-    private_key_path = f"{path}.private"
-    if not os.path.isfile(private_key_path):
-        with open(private_key_path, "w") as prv_key_file:
-            prv_key_file.write(subprocess.check_output(["wg", "genkey"]).decode())
-        force_prv = True
-
-    # Generate public key if force_prv is true or not exists
-    public_key_path = f"{path}.public"
-    if force_prv or not os.path.isfile(public_key_path):
-        os.umask(orig_umask)
-        with open(private_key_path, "r") as prv_key_file, open(public_key_path, "w") as pub_key_file:
-            pub_key_file.write(subprocess.check_output(["wg", "pubkey"], stdin=prv_key_file).decode())
-        os.umask(0o077)
-
-    # Generate preshared key if gen_pre is true and not exists
-    if gen_pre and not os.path.isfile(f"{path}.server.preshared"):
-        with open(f"{path}.server.preshared", "w") as pre_key_file:
-            pre_key_file.write(subprocess.check_output(["wg", "genpsk"]).decode())
-
-    # Read private key, public key, and preshared key
-    with open(private_key_path, "r") as prv_key_file, open(public_key_path, "r") as pub_key_file:
-        private_key = prv_key_file.read().strip()
-        public_key = pub_key_file.read().strip()
-
-    if gen_pre:
-        with open(f"{path}.server.preshared", "r") as pre_key_file:
-            preshared = pre_key_file.read().strip()
-
-    os.umask(orig_umask)
-    return private_key, public_key, preshared
-
-def replace_tokens_in_string(content, token_map):
-    for token, mapped_value in token_map.items():
-        content = content.replace(token, str(mapped_value))
-    return content
-
-def write_to_file(file_path, content):
-    with open(file_path, 'w') as file:
-        file.write(content)
-
-def read_from_file(file_path):
-    with open(file_path, 'r') as file:
-        return file.read()
-
-def replace_tokens_in_file(template_file_path, file_path, token_map):
-    # Read the content of the file
-    content = read_from_file(template_file_path)
-
-    # Replace tokens with mapped values
-    content = replace_tokens_in_string(content, token_map)
-
-    # Write the modified content back to the file
-    write_to_file(file_path, content)
+from utils.wireguard import create_pair
+from net_group import NetGroup
+from utils.constants import KEYS_DIR
 
 def main():
     # Load config
-    config = load('config.json')
+    config = load_json('config.json')
 
     # Load and check CIDRs
     lan = config['LAN']
