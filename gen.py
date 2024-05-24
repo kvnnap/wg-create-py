@@ -142,6 +142,11 @@ def main():
     write_to_file(f'{KEYS_DIR}/server/server.conf', server_file)
 
     os.umask(orig_umask)
+    os.makedirs('wgsrv/config', exist_ok=True)
+    os.umask(0o077)
+    write_to_file('wgsrv/config/server.conf', server_file)
+    os.umask(orig_umask)
+
 
 # The following code block will only execute if this script is run directly,
 # not if it's imported as a module in another script.
