@@ -117,8 +117,8 @@ def main():
         })
 
     # Write iptables rules
-    ip_tables_up_template = "iptables -A FORWARD -i %i -d IP_TABLES_DROP -s THIS_NETWORK -j DROP"
-    ip_tables_down_template = "iptables -D FORWARD -i %i -d IP_TABLES_DROP -s THIS_NETWORK -j DROP"
+    ip_tables_up_template = "iptables -A FORWARD -i %i -d IP_TABLES_DROP -s THIS_NETWORK -j DROP; iptables -A FORWARD -o %i -s IP_TABLES_DROP -d THIS_NETWORK -j DROP"
+    ip_tables_down_template = "iptables -D FORWARD -i %i -d IP_TABLES_DROP -s THIS_NETWORK -j DROP; iptables -D FORWARD -o %i -s IP_TABLES_DROP -d THIS_NETWORK -j DROP"
     ip_tables = [('iptables -t nat -A POSTROUTING -o eth+ -j MASQUERADE', 'iptables -t nat -D POSTROUTING -o eth+ -j MASQUERADE')]
     for name in netGroupsUsed:
         netGroup = netGroups[name]
