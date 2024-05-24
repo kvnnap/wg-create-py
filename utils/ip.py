@@ -1,5 +1,11 @@
 import ipaddress
 
+def ip_net_validate(cidr):
+    ipaddress.ip_network(cidr)
+
+def get_network(cidr):
+    return ipaddress.ip_network(cidr).network_address
+
 def get_prefix_length(cidr):
     return ipaddress.ip_network(cidr).prefixlen
 
