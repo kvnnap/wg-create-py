@@ -45,10 +45,13 @@ def main():
     netGroupsUsed = {}
     netGroupsUsed['main'] = netGroups['main'].get_ips()
 
+    # Files
+    orig_umask = os.umask(0o077)
+
     # Server
     server_ip = ip_int_to_str(next(netGroupsUsed['main']))
     server_port = config['ServerPort']
-    server_private_key, server_public_key, _ = create_pair("server", False)
+    server_private_key, server_public_key, _ = create_pair("server", False, orig_umask)
     server_file = replace_tokens_in_string(read_from_file('templates/server.template'), {
         'SERVER_IP': server_ip,
         'SERVER_PORT': server_port,
@@ -59,16 +62,18 @@ def main():
     # Clients
     server_peer_template = read_from_file('templates/server-peer.template')
     peer_template = read_from_file('templates/peer.template')
+    devNames = set()
     for device in config['Devices']:
         dev = unpack_config(device)
-        name = dev['Name']
-        subnet = dev['Subnet']
-        peerConfName = dev['PeerConfig']
+        name, subnet, peerConfName = (dev['Name'], dev['Subnet'], dev['PeerConfig'])
+        if name in devNames:
+            raise ValueError(f'device {name} already defined')
         if subnet not in netGroups:
             raise ValueError(f'{name} not in defined subnets')
-        netGroup = netGroups[subnet]
         if peerConfName not in peerConfigs:
             raise ValueError(f'{peerConfName} not in defined PeerConfigs')
+        devNames.add(name)
+        netGroup = netGroups[subnet]
         peerConfig = peerConfigs[peerConfName]
         
         # Init iterator (ip pool)
@@ -85,7 +90,7 @@ def main():
 
         # Get ip
         ip = ip_int_to_str(next(netGroupsUsed[subnet])) 
-        private_key, public_key, preshared_key = create_pair(name, True)
+        private_key, public_key, preshared_key = create_pair(name, True, orig_umask)
         peer_file = replace_tokens_in_string(peer_template, {
             'CLIENT_NAME': name,
             'ALLOWED_IPS': allowed_ips,
@@ -135,6 +140,8 @@ def main():
 
     server_file = replace_tokens_in_string(server_file, {'IP_TABLES_UP': ip_tables_up, 'IP_TABLES_DOWN': ip_tables_down })
     write_to_file(f'{KEYS_DIR}/server/server.conf', server_file)
+
+    os.umask(orig_umask)
 
 # The following code block will only execute if this script is run directly,
 # not if it's imported as a module in another script.

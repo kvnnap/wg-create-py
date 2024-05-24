@@ -3,12 +3,11 @@ import subprocess
 
 from utils.constants import KEYS_DIR
 
-def create_pair(name, gen_pre):
+def create_pair(name, gen_pre, orig_umask):
     force_prv = False
     preshared = ""
 
     path = os.path.join(KEYS_DIR, name, name)
-    orig_umask = os.umask(0o077)
 
     # Create directory
     os.umask(orig_umask)
@@ -44,5 +43,4 @@ def create_pair(name, gen_pre):
         with open(f"{path}.server.preshared", "r") as pre_key_file:
             preshared = pre_key_file.read().strip()
 
-    os.umask(orig_umask)
     return private_key, public_key, preshared
